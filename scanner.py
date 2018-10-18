@@ -2,7 +2,7 @@
 just some testing code..
 """
 
-def main():
+def scan_port():
 	import sys
 	import socket
 	
@@ -37,6 +37,17 @@ def main():
 		else:
 			print("closed on",p)
 		sock.close()
-if __name__ == "__main__":
 
-	main()
+def usage():
+        print("Scanner and Flooder Tool")
+        print()
+        print("ex, scan usage: scanner.py -s <target_host> <start_port> <end_port>")
+        print("-s	- scan a target host and a range of ports")
+		print("-l   - list the sets of ports found open for all hosts scanned")
+        print()
+        print()
+        print("Examples: ")
+        print("scanner.py -l")
+        print("scanner.py -s 192.168.0.1 0 500")
+
+        sys.exit(0)
