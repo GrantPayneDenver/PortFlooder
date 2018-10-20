@@ -1,11 +1,19 @@
 """
-Scanner module
+Scanner and Flooding Module
 
-gathered from whois lookups @ https://www.ultratools.com/tools/ipWhoisLookup
+
+ TODO:
+ 	1: create methods that actually flood ports we've scanned and found open
+ 	 1.a: Make sure that they cover the full range of flooding / DDOS we talked about
+ 	 1.b: see if there are "dummy" ip addresses out there that you can target and test flooding on
+ 	2: Implement State load() and save() to save hosts and their open ports to disk
+
+
 Testing IPs: 192.174.63.97    www.NREL.gov
 		     151.101.117.164  www.nytimes.com
 			 104.16.60.202    www.thrashermagazine.com
 
+gathered from whois lookups @ https://www.ultratools.com/tools/ipWhoisLookup
 """
 
 import sys
@@ -142,6 +150,8 @@ if __name__ == "__main__":
 		scanning(args, state)
 	elif args[1] == "-l":
 		list_ports(state)
+	elif args[1] == "-f":
+		print("WARNING: make sure you're not actually flooding a 'real' IP address")
 	else:
 		print("invalid arguments entered: %s" % sys.argv)
 
@@ -163,6 +173,8 @@ if __name__ == "__main__":
 			scanning(cmds, state)
 		elif cmds[0] == "-l":
 			list_ports(state)
+		elif cmds[0] == "-f":
+			print("WARNING: make sure you're not actually flooding a 'real' IP address")
 		elif cmds[0] in ('-q', '-Q'):
 			sys.exit(0)
 		else:
