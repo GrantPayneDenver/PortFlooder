@@ -32,6 +32,7 @@ class State():
 		print("**************************************************")
 		if not self.host_and_ports:
 			print("No hosts have been scanned or loaded yet")
+			return
 		print("These are all open ports found for all hosts scanned: ")
 		for h in self.host_and_ports.keys():
 			print("HOST: %s" % h)
@@ -47,7 +48,24 @@ class State():
 		Will save hosts and open ports to a .txt file
 		:return:
 		"""
-		pass # need to implement
+		path = input ("To save ports scanned to file, please enter a filename, with or without path.")
+		f = None
+		if not path.endswith('.txt'):
+			path+='.txt'
+		try:
+			f=open(path, 'w')
+		except Exception as e:
+			print('file save failed, error from path')
+			print (e)
+			return
+		try:
+			for host in self.host_and_ports.keys():
+				f.write(host + '\n')
+				for port in self.host_and_ports[host]:
+					f.write(str(port) +'\n')
+				f.write("\n")
+		except Exception as e:
+			print(e)
 
 	def load(self):
 		"""
@@ -113,6 +131,7 @@ def usage(print_code_name=True):
 	print("-l              - list the sets of ports found open for all hosts scanned")
 	print("-f              - flood a target host and list of target ports.\n" 
 			"            Requires three args, <host> and <port start> and <port end>")
+	print("-a            - save hosts and open ports to a .txt file")
 	print()
 	print()
 	print("Examples: ")
@@ -177,5 +196,7 @@ if __name__ == "__main__":
 			print("WARNING: make sure you're not actually flooding a 'real' IP address")
 		elif cmds[0] in ('-q', '-Q'):
 			sys.exit(0)
+		elif cmds[0] == '-a':
+			state.save()
 		else:
 			print("invalid arguments entered: %s" % cmds)
