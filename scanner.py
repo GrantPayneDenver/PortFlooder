@@ -18,7 +18,9 @@ gathered from whois lookups @ https://www.ultratools.com/tools/ipWhoisLookup
 
 import sys
 import socket
+import scapy
 from multiprocessing import Pool
+
 
 class State():
 	"""
@@ -72,6 +74,11 @@ class State():
 		Will open saved hosts and open ports using specified path
 		:return:
 		"""
+
+def ICMP_Ping_Flood(host):
+	""" Sends a flood of pings using the ICMP protocols """
+	pingr = IP(dst="192.168.200.254") / ICMP()
+	sr1(pingr)
 
 def scanning(args, state):
 	"""
@@ -157,29 +164,31 @@ if __name__ == "__main__":
 
 	# if no args sent, just print usage()
 	try:
+		# see if started script with args, if not except and go to while True
 		sys.argv[1]
-	except:  
-		usage()
 
-	if sys.argv[1] in ('-h', '-help'):
+		if sys.argv[1] in ('-h', '-help'):
+			usage()
+		args = sys.argv
+		if args[1] == "-s":
+			scanning(args, state)
+		elif args[1] == "-l":
+			list_ports(state)
+		elif args[1] == "-f":
+			print("WARNING: make sure you're not actually flooding a 'real' IP address")
+		else:
+			print("invalid arguments entered: %s" % sys.argv)
+	except IndexError:
 		usage()
-
-	args = sys.argv
-	if args[1] == "-s":
-		scanning(args, state)
-	elif args[1] == "-l":
-		list_ports(state)
-	elif args[1] == "-f":
-		print("WARNING: make sure you're not actually flooding a 'real' IP address")
-	else:
-		print("invalid arguments entered: %s" % sys.argv)
 
 	while True:
 
-		print("Enter another set of commands <sans the file name> (hint, type -h or -help for help)""")
+		print("Enter a set of commands <sans the file name> (hint, type -h or -help for help)""")
 		print("To quit, enter -q/-Q")
 		print()
 		cmds = input("<#SCNR> ").split()
+		if 'scanner.py' in cmds:
+			cmds.remove('scanner.py')
 		if not cmds: continue
 		if cmds[0] in ('-h', '-help'):
 			usage(False)
