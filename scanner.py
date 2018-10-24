@@ -6,7 +6,7 @@ Scanner and Flooding Module
  	1: create methods that actually flood ports we've scanned and found open
  	 1.a: Make sure that they cover the full range of flooding / DDOS we talked about
  	 1.b: see if there are "dummy" ip addresses out there that you can target and test flooding on
- 	2: Implement State load() and save() to save hosts and their open ports to disk
+ 	3: see if ICMP_Ping_flood() can be made to be distributed somehow.
 
 
 Testing IPs: 192.174.63.97    www.NREL.gov
@@ -20,7 +20,8 @@ import sys
 import socket
 import scapy
 from multiprocessing import Pool
-
+from platform   import system as system_name  # Returns the system/OS name
+from subprocess import call   as system_call  # Execute a shell command
 
 class State():
 	"""
@@ -74,11 +75,46 @@ class State():
 		Will open saved hosts and open ports using specified path
 		:return:
 		"""
+		path = input("Please enter the file name, with full path if needed, to load hosts and open ports -> ")
+		try:
+			f = open(path)
+			lines = f.read()
+			entries = lines.split('\n\n')
+			for entry in entries:
+				host_ports = entry.split('\n')
+				if host_ports[0] not in self.host_and_ports.keys():
+					self.host_and_ports[host_ports[0]] = []
+				host = host_ports[0]
+				# if blank line read in as a host for some reason, skip it
+				if host == "": continue
+				# remove host from host ports as we've now accounted for it
+				ports=host_ports[1:]
+				# add all ports for this host to list, pointed to by host, host acting as a key
+				for p in ports:
+					if str(p) not in self.host_and_ports[host]:
+						self.host_and_ports[host].append(int(p))
+			print(self.host_and_ports)
+		except e:
+			print(e)
 
-def ICMP_Ping_Flood(host):
-	""" Sends a flood of pings using the ICMP protocols """
-	pingr = IP(dst="192.168.200.254") / ICMP()
-	sr1(pingr)
+
+def ICMP_Ping_Flood(host, amount=1):
+	"""
+	Sends a flood of pings n pings set by amount using the ICMP protocols.
+	Remember that a host may not respond to a ping (ICMP) request even if the host name is valid.
+	"""
+	try:
+		amount=int(amount)
+		# Ping command count option as function of OS
+		param = '-n' if system_name().lower() == 'windows' else '-c'
+		for i in range(0, amount):
+			# Building the command. Ex: "ping -c 1 google.com"
+			command = ['ping', param, '1', host]
+			# Pinging
+			print(system_call(command))
+	except Exception as e:
+		print('something went wrong in ping flood ', e)
+		print('host and number of pings set: ', host, ' ', amount)
 
 def scanning(args, state):
 	"""
@@ -136,20 +172,21 @@ def usage(print_code_name=True):
 	print("-s	        - scan a target host and a range of ports\n"
 			"            Requires three args, <host> and <port start> and <port end>")
 	print("-l              - list the sets of ports found open for all hosts scanned")
-	print("-f              - flood a target host and list of target ports.\n" 
+	print("-pf             - flood a target host with an ICMP PING flood.\n" 
 			"            Requires three args, <host> and <port start> and <port end>")
 	print("-a            - save hosts and open ports to a .txt file")
+	print("-r            - read in hosts and open ports from a .txt file")
 	print()
 	print()
 	print("Examples: ")
 	if print_code_name:
 		print("scanner.py -l")
 		print("scanner.py -s 192.168.0.1 0 500")
-		print("scanner.py -f 192.168.0.1 0 500")
+		print("scanner.py -pf 192.168.0.1  <num of pings>")
 	else:
 		print("-l")
 		print("-s 192.168.0.1 0 500")
-		print("-f 192.168.0.1 0 500")
+		print("-pf 192.168.0.1   <num of pings>")
 
 	# sys.exit(0)
 
@@ -174,8 +211,12 @@ if __name__ == "__main__":
 			scanning(args, state)
 		elif args[1] == "-l":
 			list_ports(state)
-		elif args[1] == "-f":
+		elif args[1] == "-pf":
+			# call for a ping flood
 			print("WARNING: make sure you're not actually flooding a 'real' IP address")
+			ICMP_Ping_Flood(host=args[1], amount=args[2])
+		elif args[1] == "-r":
+			state.load()
 		else:
 			print("invalid arguments entered: %s" % sys.argv)
 	except IndexError:
@@ -201,11 +242,15 @@ if __name__ == "__main__":
 			scanning(cmds, state)
 		elif cmds[0] == "-l":
 			list_ports(state)
-		elif cmds[0] == "-f":
+		elif cmds[0] == "-pf":
+			# call for a ping flood
 			print("WARNING: make sure you're not actually flooding a 'real' IP address")
+			ICMP_Ping_Flood(host=cmds[1], amount=cmds[2])
 		elif cmds[0] in ('-q', '-Q'):
 			sys.exit(0)
 		elif cmds[0] == '-a':
 			state.save()
+		elif cmds[0] == "-r":
+			state.load()
 		else:
 			print("invalid arguments entered: %s" % cmds)
