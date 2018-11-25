@@ -1,12 +1,9 @@
 """
 Scanner and Flooding Module
 
-
- TODO:
- 	1: create methods that actually flood ports we've scanned and found open
- 	 1.a: Make sure that they cover the full range of flooding / DDOS we talked about
- 	 1.b: see if there are "dummy" ip addresses out there that you can target and test flooding on
- 	3: see if ICMP_Ping_flood() can be made to be distributed somehow.
+Meant to act as an educational and demonstrative module for port scanning and
+packet constuction for port flooding (Denial of Service). This code does not actually
+have any DDOS capabilites.
 
 Dist'd DOS?
 https://www.blackmoreops.com/2015/04/21/denial-of-service-attack-dos-using-hping3-with-spoofed-ip-in-kali-linux/
@@ -151,6 +148,10 @@ def upd_attack(host, cmds):
 			amount = 1
 		for i in range(0, amount):
 			send(IP(dst=host)/UDP(dport=port))
+		print("sent %s UDP Packets" % amount)
+		print("UDP Packet details:")
+		udp = UDP(dport=port)
+		udp.show()
 	except Exception as e:
 		print('something went wrong in udp_attack ', e)
 		print('cmds: ', cmds)
@@ -210,15 +211,25 @@ def SynAckAttack(host, cmds):
 		print("packets explanation:")
 		print("sent %s packets of this form: " % amount)
 		IP_Packet.show()
-		print("ihl: internet header length")
-		print("tos: type of service")
-		print("frag: fragement offset")
-		print("ttl: time to live [s]")
-		print("proto: Protocol num, 0 = IPv6")
+		print("ihl:    internet header length")
+		print("tos:    type of service")
+		print("frag:   fragement offset")
+		print("ttl:    time to live [s]")
+		print("proto:  Protocol num, 0 = IPv6")
 		print("chksum: check sum for error checking")
 		print("***")
 		print('TCP SYN packet: ')
 		TCP_Packet.show()
+		print("sport:   identifies sending port")
+		print("dport:   identifies receiving port")
+		print("seq:     seqence number. Dual role. If SYN flag is set (1), it's initial seqence number.")
+		print("           if flag is clear (0) this is accumulated seqence number for current session.")
+		print("ack:     ack number. If ACK flag set then this value is what sender of ACK expects to get back")
+		print("dataofs: specifies the size of the TCP header in 32-bit words")
+		print("flags:   there are 9 1-bit flags")
+		print("window:  size of data windows sender of segment willing to receive back")
+		print("chksum:  error checking checksum")
+		print("urgptr:  position offset from the seqence number of last urgent data byte.")
 		# get grasp of all flags set in the Scapy TCP packet
 		# obv, it's going to just be SYN, set with 'S'
 		flags_vals = {
@@ -251,9 +262,6 @@ def SynAckAttack(host, cmds):
 		print('something was wrong with arguments: ', cmds)
 		print('\n', e)
 		return
-
-		
-		
 		
 def scanning(args, state):
 	"""
