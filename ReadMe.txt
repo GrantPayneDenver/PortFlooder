@@ -1,5 +1,9 @@
 **PortScanner**
-by: Tuan Pham, Grant Payne
+by: Tuan Phan, Grant Payne
+
+*** video ***
+https://www.youtube.com/watch?v=5zwPB8KvkI0
+
 
 This module acts as an educational tool to show how portscanning, 
 packet construction and sending, and traffic logging using Snort are done. 
